@@ -10,6 +10,7 @@ export type RawObjectiveCondition = {
   condition_type_name: string;
   id: number;
   value_descriptions: string[];
+  result_exceptions: string[][];
   value_range: (string | number)[];
   range: boolean;
 };

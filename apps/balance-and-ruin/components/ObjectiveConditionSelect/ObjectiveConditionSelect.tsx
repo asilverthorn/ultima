@@ -26,8 +26,6 @@ export const ObjectiveConditionSelect = ({
 
   const meta = useSelector(selectObjectiveConditionMetadataById);
   const myMeta = meta[id];
-  const metaMin = first(myMeta.value_range);
-  const metaMax = last(myMeta.value_range);
 
   const options = useMemo(
     () =>
@@ -132,15 +130,35 @@ export const ObjectiveConditionSelect = ({
     onChange(obj);
   };
 
-  const selectOptions =
-    myMeta.value_range?.map<SelectOption>((value, idx) => {
-      const description = myMeta.value_descriptions[idx];
+  /* Get the options for the condition subselect */
+  //first, filter out any result_exceptions from it
+  const seed = new Array<number>();
+  const nonFilteredIndexes = myMeta.value_range?.reduce((resultInProgress, _, idx) => {
+    const result_exceptions = myMeta.result_exceptions[idx];
+    const objective_result = objective.result.label;
+    if(result_exceptions.indexOf(objective_result) == -1) { 
+      // result_exceptions does not include our objective -- include its index in our array
+      resultInProgress.push(idx);
+    }
+    return resultInProgress;
+  }, seed) ?? [];
+
+  //next, convert each non-filtered one into the SelectOption (for non-range options)
+  const selectOptions = 
+    nonFilteredIndexes?.map<SelectOption>((nonFilteredIdx) => {
+      const description = myMeta.value_descriptions[nonFilteredIdx];
+      const origValue = myMeta.value_range[nonFilteredIdx]
       return {
         label: description,
-        value: value.toString(),
+        value: origValue.toString(),
       };
-    }) ?? [];
+    })
 
+  // finally, get the min and max ranges
+  var firstIndex = first(nonFilteredIndexes)
+  const metaMin = (firstIndex) ? myMeta.value_range[firstIndex] : 0;
+  var lastIndex = last(nonFilteredIndexes)
+  const metaMax = (lastIndex) ? myMeta.value_range[lastIndex] : 0;
   const getSelectedValueOption = () =>
     selectOptions.find(
       ({ value }) => value.toString() === condition.values?.[0]?.toString()
@@ -171,6 +189,7 @@ export const ObjectiveConditionSelect = ({
       />
 
       {showSubselect && !range ? (
+        /* Show the options for this condition in a Select */
         <BaseSelect
           className="ff6wc-select-container"
           classNamePrefix="ff6wc-select"
@@ -184,6 +203,7 @@ export const ObjectiveConditionSelect = ({
       ) : null}
 
       {showSubselect && range ? (
+        /* Show the slider range based on this conditions min/max */
         <Slider
           markActiveValues
           min={metaMin as number}
