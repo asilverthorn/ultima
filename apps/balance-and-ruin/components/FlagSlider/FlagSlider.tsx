@@ -48,11 +48,19 @@ export const FlagSlider = ({
 
   const allowedValues = hardAllowed ?? schemaAllowed;
 
-  const setValue = (val: number) => {
+  const setValue = (value: number) => {
+    if (Number.isNaN(value)) {
+      value = null;
+    } else if (value > max) {
+      value = max;
+    } else if (value < min) {
+      value = min;
+    }
+
     dispatch(
       setFlag({
-        flag: flag,
-        value: val,
+        flag,
+        value,
       })
     );
   };
